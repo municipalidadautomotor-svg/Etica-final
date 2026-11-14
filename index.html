@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lucho Benítez · Humano digital · El Gran Juicio de la IA</title>
+<meta name="description" content="Humano digital ficticio para El Gran Juicio de la IA (Clase final de Ética con IA, El Colorado, Formosa).">
+<style>
+  :root{
+    --bg1:#071b14; --bg2:#0f3a2b; --panel:#0c2a1f; --line:#2a5a46;
+    --gold:#d2ad45; --gold2:#a8801f; --cream:#f3ecd8; --muted:#a9bdb2;
+    --user:#16473a; --ai:#1b3550; --danger:#e07a6a;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--cream);
+    background:radial-gradient(1200px 700px at 30% 0%,var(--bg2),var(--bg1) 70%) fixed;
+    -webkit-font-smoothing:antialiased;
+  }
+  main{max-width:1100px;margin:0 auto;padding:18px 16px 28px;display:grid;gap:16px}
+  header .kicker{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+  header h1{margin:4px 0 2px;font-family:Georgia,"Times New Roman",serif;font-weight:600;font-size:clamp(24px,4.6vw,38px);line-height:1.15}
+  header p{margin:0;color:var(--muted);font-size:15px}
+  .badge{display:inline-block;margin-top:8px;padding:3px 10px;border:1px solid var(--gold2);border-radius:999px;font-size:12px;color:var(--gold)}
+  .layout{display:grid;gap:16px;grid-template-columns:1fr}
+  @media(min-width:860px){.layout{grid-template-columns:1.1fr 1fr;align-items:stretch}}
+  .stage{
+    position:relative;border:1px solid var(--line);border-radius:18px;overflow:hidden;
+    background:linear-gradient(180deg,#0a2a20 0%,#06160f 100%);
+    height:min(56vh,520px);min-height:340px;touch-action:pan-y;cursor:grab;
+  }
+  .stage.dragging{cursor:grabbing}
+  .stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+  .stage::after{content:"";position:absolute;inset:auto 0 0 0;height:22%;background:linear-gradient(0deg,rgba(6,22,15,.9),transparent);pointer-events:none}
+  .status{position:absolute;left:12px;top:12px;z-index:2;display:flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;background:rgba(6,22,15,.72);border:1px solid var(--line);font-size:13px}
+  .dot{width:9px;height:9px;border-radius:50%;background:#6b7f76}
+  .status[data-mode="connecting"] .dot{background:var(--gold);animation:pulse 1s infinite}
+  .status[data-mode="listening"] .dot{background:#5ad18a;animation:pulse 1.6s infinite}
+  .status[data-mode="speaking"] .dot{background:#6db6ff;animation:pulse .6s infinite}
+  @keyframes pulse{50%{opacity:.35}}
+  .hint{position:absolute;right:12px;bottom:10px;z-index:2;font-size:12px;color:var(--muted)}
+  .side{display:flex;flex-direction:column;gap:12px;min-height:0}
+  .controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  button{font:inherit;cursor:pointer}
+  .btn{padding:12px 20px;border-radius:12px;border:1px solid var(--gold2);background:linear-gradient(180deg,#e0bd5a,#b88f2c);color:#1b1405;font-weight:700;font-size:16px}
+  .btn:hover{filter:brightness(1.06)}
+  .btn:disabled{opacity:.6;cursor:wait}
+  .btn.stop{background:transparent;color:var(--cream);border-color:var(--danger)}
+  .note{font-size:13px;color:var(--muted)}
+  .error{display:none;padding:10px 12px;border:1px solid var(--danger);border-radius:10px;background:rgba(224,122,106,.1);font-size:14px}
+  .error.show{display:block}
+  .transcript{flex:1;min-height:200px;max-height:380px;overflow:auto;border:1px solid var(--line);border-radius:14px;background:var(--panel);padding:12px;display:flex;flex-direction:column;gap:8px}
+  .empty{margin:auto;text-align:center;color:var(--muted);font-size:14px;padding:12px}
+  .msg{max-width:88%;padding:8px 12px;border-radius:12px;font-size:15px;line-height:1.4}
+  .msg small{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;opacity:.7;margin-bottom:2px}
+  .msg.user{align-self:flex-end;background:var(--user)}
+  .msg.ai{align-self:flex-start;background:var(--ai)}
+  form.text{display:flex;gap:8px}
+  form.text input{flex:1;min-width:0;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:#08211a;color:var(--cream);font:inherit;font-size:15px}
+  form.text button{padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:#12392c;color:var(--cream)}
+  form.text button:disabled,form.text input:disabled{opacity:.5}
+  footer{font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:12px;line-height:1.5}
+  noscript{display:block;padding:12px;color:var(--danger)}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="kicker">El Gran Juicio de la IA · Clase final de Ética con IA</div>
+    <h1>Ing. Luciano “Lucho” Benítez</h1>
+    <p>Consultor en ciberseguridad y administrador de datos · El Colorado, Formosa</p>
+    <span class="badge">Personaje ficticio</span>
+  </header>
+
+  <noscript>Esta página necesita JavaScript para funcionar.</noscript>
+
+  <div class="layout">
+    <section class="stage" id="stage" aria-label="Figura 3D de Lucho Benítez">
+      <div class="status" id="status" data-mode="idle" role="status"><span class="dot"></span><span id="statusText">Listo para declarar</span></div>
+      <canvas id="c"></canvas>
+      <div class="hint">Arrastrá para girar</div>
+    </section>
+
+    <section class="side">
+      <div class="controls">
+        <button class="btn" id="startBtn" type="button">Interrogar a Lucho</button>
+        <button class="btn stop" id="stopBtn" type="button" hidden>Terminar declaración</button>
+        <span class="note" id="micNote">Se usa el micrófono. Hablá con tranquilidad y esperá la respuesta.</span>
+      </div>
+      <div class="error" id="error" role="alert"></div>
+      <div class="transcript" id="transcript" aria-live="polite">
+        <div class="empty" id="empty">Cuando empieces, la conversación aparece acá.</div>
+      </div>
+      <form class="text" id="textForm" autocomplete="off">
+        <input id="textInput" type="text" placeholder="O escribile una pregunta…" aria-label="Escribir una pregunta" disabled>
+        <button type="submit" id="textBtn" disabled>Enviar</button>
+      </form>
+    </section>
+  </div>
+
+  <footer>
+    Ficción pedagógica: Lucho es un personaje inventado y no representa a ninguna persona real; se juzga al personaje, nunca a quien lo creó.
+    La voz es de la biblioteca de ElevenLabs (no clona a nadie). Herramientas de IA usadas: Claude (redacción de la ficha y del prompt) y ElevenLabs (agente de voz).
+  </footer>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* ================== CONFIGURACIÓN ================== */
+const AGENT_ID = "agent_5401m7bkdyy3ebbbnz8jkzerknvm";
+const SDK_URL  = "https://cdn.jsdelivr.net/npm/@elevenlabs/client/+esm";
+
+/* ================== ESCENA 3D ================== */
+const stage = document.getElementById("stage");
+const canvas = document.getElementById("c");
+let renderer, scene, camera, person, headGroup, mouth, eyes = [], torso, leds = [];
+let webglOk = true;
+
+try{
+  renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:true});
+}catch(e){
+  webglOk = false;
+  stage.insertAdjacentHTML("beforeend","<div class='empty' style='position:absolute;inset:0;display:flex;align-items:center;justify-content:center'>Tu navegador no pudo iniciar la vista 3D. La voz funciona igual.</div>");
+}
+
+if(webglOk){
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  scene = new THREE.Scene();
+  scene.fog = new THREE.Fog(0x06160f, 7, 16);
+  camera = new THREE.PerspectiveCamera(28, 1, 0.1, 50);
+  camera.position.set(0, 1.75, 6.4);
+  camera.lookAt(0, 1.4, 0);
+
+  scene.add(new THREE.HemisphereLight(0xcfe8ff, 0x1a2a22, 0.75));
+  const key = new THREE.DirectionalLight(0xfff1d6, 1.05); key.position.set(2.5, 4, 5); scene.add(key);
+  const rim = new THREE.DirectionalLight(0x58d49a, 0.7); rim.position.set(-4, 2.5, -2); scene.add(rim);
+  const gold = new THREE.PointLight(0xd2ad45, 0.6, 12); gold.position.set(3, 1.2, 2.5); scene.add(gold);
+
+  const M = (c, o={}) => new THREE.MeshStandardMaterial(Object.assign({color:c, roughness:0.75, metalness:0.0}, o));
+  const skin = M(0xd6a07c, {roughness:0.6});
+  const skinDark = M(0xb9835f, {roughness:0.7});
+  const hairM = M(0x1d1712, {roughness:0.9});
+  const beardM = M(0x2b2019, {roughness:0.95});
+  const shirt = M(0x8db6dc, {roughness:0.85});
+  const shirtLight = M(0xa9c9e8, {roughness:0.85});
+  const shirtDark = M(0x6f98c0, {roughness:0.9});
+  const frame = M(0x15191c, {roughness:0.4, metalness:0.4});
+  const lensM = new THREE.MeshStandardMaterial({color:0xcfe8ff, roughness:0.05, metalness:0, transparent:true, opacity:0.12});
+  const white = M(0xf6f4ee, {roughness:0.4});
+  const iris = M(0x2a1a10, {roughness:0.3});
+  const lipM = M(0x9c5448, {roughness:0.6});
+  const cavity = new THREE.MeshBasicMaterial({color:0x2c0a0d, side:THREE.DoubleSide});
+
+  /* ---- fondo: sala de servidores ---- */
+  const bg = new THREE.Group(); scene.add(bg);
+  const rackMat = M(0x0a1a14, {roughness:0.6, metalness:0.3});
+  const rackTrim = M(0x1f4b3a, {roughness:0.5, metalness:0.4});
+  [-3.4,-1.9,1.9,3.4].forEach((x,i)=>{
+    const r = new THREE.Mesh(new THREE.BoxGeometry(1.2, 4.2, 0.9), rackMat);
+    r.position.set(x, 1.6, -3.2 - (i%2)*0.5); bg.add(r);
+    const trim = new THREE.Mesh(new THREE.BoxGeometry(1.24, 0.06, 0.94), rackTrim);
+    for(let k=0;k<6;k++){ const t = trim.clone(); t.position.set(x, 0.1 + k*0.7, r.position.z); bg.add(t); }
+    for(let k=0;k<14;k++){
+      const col = Math.random()<0.72 ? 0x4cf0a0 : 0xffb347;
+      const led = new THREE.Mesh(new THREE.BoxGeometry(0.06,0.06,0.02), new THREE.MeshBasicMaterial({color:col}));
+      led.position.set(x - 0.45 + (k%7)*0.15, 0.4 + Math.floor(k/7)*1.1 + Math.random()*0.4, r.position.z + 0.47);
+      led.userData = {col, phase: Math.random()*10, rate: 1+Math.random()*3};
+      bg.add(led); leds.push(led);
+    }
+  });
+
+  /* ---- persona ---- */
+  person = new THREE.Group(); scene.add(person);
+
+  // torso y hombros
+  torso = new THREE.Mesh(new THREE.CylinderGeometry(0.72, 0.9, 2.3, 40), shirt);
+  torso.scale.z = 0.56; torso.position.set(0, 0.35, 0); person.add(torso);
+  [-1,1].forEach(s=>{
+    const sh = new THREE.Mesh(new THREE.SphereGeometry(0.3, 24, 20), shirt);
+    sh.scale.set(1, 0.95, 0.85); sh.position.set(s*0.8, 1.3, 0); person.add(sh);
+    const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.19, 1.3, 20), shirt);
+    arm.position.set(s*0.98, 0.7, 0); arm.rotation.z = s*0.08; person.add(arm);
+    const cuff = new THREE.Mesh(new THREE.CylinderGeometry(0.205, 0.205, 0.14, 20), shirtDark);
+    cuff.position.set(s*1.02, 0.1, 0); cuff.rotation.z = s*0.08; person.add(cuff);
+  });
+  // cuello y cuello de camisa
+  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.2, 0.4, 24), skinDark);
+  neck.position.set(0, 1.5, 0); person.add(neck);
+  [-1,1].forEach(s=>{
+    const col = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.24, 0.05), shirtLight);
+    col.position.set(s*0.14, 1.36, 0.27); col.rotation.set(0.25, 0, s*-0.55); person.add(col);
+  });
+  const placket = new THREE.Mesh(new THREE.BoxGeometry(0.035, 1.1, 0.02), shirtDark);
+  placket.position.set(0, 0.8, 0.5); person.add(placket);
+  for(let k=0;k<4;k++){
+    const b = new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,0.015,12), white);
+    b.rotation.x = Math.PI/2; b.position.set(0, 1.12 - k*0.26, 0.51); person.add(b);
+  }
+
+  // cabeza (pivote en el cuello)
+  const PIVOT = 1.6;
+  headGroup = new THREE.Group(); headGroup.position.set(0, PIVOT, 0); person.add(headGroup);
+  const H = (mesh, x, y, z)=>{ mesh.position.set(x, y-PIVOT, z); headGroup.add(mesh); return mesh; };
+  const sc = (m, x,y,z)=>{ m.scale.set(x,y,z); return m; };
+  const HEAD_Y = 1.95;
+  const surfaceZ = (y, r=0.515)=> 0.95*r*Math.sqrt(Math.max(0.01, 1 - Math.pow((y-HEAD_Y)/(1.1*r), 2)));
+
+  H(sc(new THREE.Mesh(new THREE.SphereGeometry(0.5, 48, 40), skin), 0.92, 1.1, 0.95), 0, HEAD_Y, 0);
+  // orejas
+  [-1,1].forEach(s=> H(sc(new THREE.Mesh(new THREE.SphereGeometry(0.1, 16, 12), skinDark), 0.4, 1, 0.65), s*0.455, 1.95, 0));
+  // pelo
+  H(sc(new THREE.Mesh(new THREE.SphereGeometry(0.515, 48, 32, 0, Math.PI*2, 0, Math.PI*0.44), hairM), 0.95, 1.14, 1.0), 0, HEAD_Y+0.02, -0.01);
+  H(sc(new THREE.Mesh(new THREE.SphereGeometry(0.52, 40, 28, Math.PI*1.1, Math.PI*0.8, 0, Math.PI*0.64), hairM), 0.95, 1.12, 1.0), 0, HEAD_Y, -0.02);
+  // barba corta + bigote + patillas
+  H(sc(new THREE.Mesh(new THREE.SphereGeometry(0.515, 48, 32, 0, Math.PI*2, Math.PI*0.57, Math.PI*0.33), beardM), 0.92, 1.1, 0.95), 0, HEAD_Y, 0);
+  [-1,1].forEach(s=>{
+    const sb = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.3, 0.11), beardM);
+    sb.rotation.z = s*0.05; H(sb, s*0.44, 1.93, 0.1);
+  });
+  const must = sc(new THREE.Mesh(new THREE.SphereGeometry(0.1, 20, 12), beardM), 1.25, 0.32, 0.55);
+  H(must, 0, 1.79, surfaceZ(1.79)+0.012);
+
+  // nariz
+  H(sc(new THREE.Mesh(new THREE.SphereGeometry(0.075, 20, 16), skin), 0.82, 1.25, 1.0), 0, 1.89, 0.5);
+  // ojos (con párpado por escala en Y)
+  [-1,1].forEach(s=>{
+    const eye = new THREE.Group();
+    eye.add(sc(new THREE.Mesh(new THREE.SphereGeometry(0.075, 20, 16), white), 1, 0.85, 0.55));
+    const ir = new THREE.Mesh(new THREE.SphereGeometry(0.042, 16, 12), iris); ir.position.z = 0.03; eye.add(ir);
+    H(eye, s*0.17, 2.0, surfaceZ(2.0, 0.5)+0.0);
+    eyes.push(eye);
+    // cejas
+    const brow = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.035, 0.04), hairM);
+    brow.rotation.z = s*-0.1; H(brow, s*0.17, 2.12, surfaceZ(2.12, 0.5)+0.01);
+    // anteojos
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(0.135, 0.014, 12, 40), frame);
+    H(rim, s*0.17, 2.0, surfaceZ(2.0, 0.5)+0.045);
+    const lens = new THREE.Mesh(new THREE.CircleGeometry(0.13, 28), lensM);
+    H(lens, s*0.17, 2.0, surfaceZ(2.0, 0.5)+0.045);
+    const temple = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.012, 0.42), frame);
+    H(temple, s*0.4, 2.02, 0.2);
+  });
+  const bridge = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.075, 8), frame);
+  bridge.rotation.z = Math.PI/2; H(bridge, 0, 2.02, surfaceZ(2.02, 0.5)+0.05);
+
+  // boca
+  const MOUTH_Y = 1.7;
+  mouth = new THREE.Group();
+  const cav = new THREE.Mesh(new THREE.CircleGeometry(0.085, 28), cavity); cav.name = "cav";
+  const teeth = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.022, 0.004), white); teeth.name = "teeth";
+  const upper = sc(new THREE.Mesh(new THREE.SphereGeometry(0.08, 18, 10), lipM), 1.0, 0.27, 0.4); upper.name = "upper";
+  const lower = sc(new THREE.Mesh(new THREE.SphereGeometry(0.075, 18, 10), lipM), 1.0, 0.3, 0.42); lower.name = "lower";
+  mouth.add(cav, teeth, upper, lower);
+  H(mouth, 0, MOUTH_Y, surfaceZ(MOUTH_Y)+0.012);
+  mouth.userData = {cav, teeth, upper, lower};
+
+  person.position.y = 0;
+}
+
+/* ---- animación ---- */
+const state = { mode:"idle", conversation:null, outVol:0, peak:0, openNow:0, drag:0, dragTarget:0, speakStart:0, nextBlink:2, blink:0, t:0 };
+const clamp = (v,a,b)=>Math.min(b,Math.max(a,v));
+
+function setMouth(open){
+  if(!mouth) return;
+  const {cav, teeth, upper, lower} = mouth.userData;
+  cav.scale.set(1, 0.12 + open*1.0, 1);
+  cav.position.y = -open*0.04;
+  upper.position.set(0, 0.012, 0.004);
+  lower.position.set(0, -0.016 - open*0.085, 0.004);
+  teeth.position.set(0, -0.002, 0.004);
+  teeth.visible = open > 0.3;
+}
+
+let last = performance.now();
+function frame(now){
+  requestAnimationFrame(frame);
+  const dt = Math.min(0.05, (now-last)/1000); last = now; state.t += dt;
+  if(!webglOk) return;
+  const t = state.t;
+
+  // boca
+  let target = 0;
+  if(state.mode === "speaking"){
+    const peak = Math.max(state.peak, 0.2);
+    target = Math.pow(clamp(state.outVol/peak, 0, 1), 1.15) * 0.95;
+    if(state.peak < 0.02 && (now - state.speakStart) > 1200){ // respaldo si no hay lectura de volumen
+      target = 0.25 + 0.35*Math.abs(Math.sin(t*11)) * (0.6+0.4*Math.sin(t*3.1));
+    }
+  }
+  state.openNow += (target - state.openNow) * Math.min(1, dt*22);
+  setMouth(state.openNow);
+
+  // parpadeo
+  state.nextBlink -= dt;
+  if(state.nextBlink <= 0){ state.blink = 0.14; state.nextBlink = 2 + Math.random()*3.5; }
+  state.blink = Math.max(0, state.blink - dt);
+  const bl = state.blink > 0 ? 0.08 : 1;
+  eyes.forEach(e=> e.scale.y += (bl - e.scale.y) * 0.6);
+
+  // cabeza y postura
+  const speaking = state.mode === "speaking", listening = state.mode === "listening";
+  headGroup.rotation.x = (speaking ? 0.035*Math.sin(t*2.3) + state.openNow*0.05 : 0.01*Math.sin(t*0.9)) ;
+  headGroup.rotation.z = listening ? 0.05 + 0.01*Math.sin(t*1.1) : 0.012*Math.sin(t*0.7);
+  headGroup.rotation.y = speaking ? 0.06*Math.sin(t*1.3) : 0.03*Math.sin(t*0.5);
+  torso.scale.y = 1 + 0.006*Math.sin(t*1.6);
+  person.position.y = 0.012*Math.sin(t*1.6);
+
+  // giro con arrastre
+  if(!stage.classList.contains("dragging")) state.dragTarget *= 0.96;
+  state.drag += (state.dragTarget - state.drag) * 0.12;
+  person.rotation.y = state.drag;
+
+  // LEDs
+  leds.forEach(l=>{
+    const on = Math.sin(t*l.userData.rate + l.userData.phase) > -0.2;
+    l.material.color.setHex(on ? l.userData.col : 0x143024);
+  });
+
+  renderer.render(scene, camera);
+}
+
+function resize(){
+  if(!webglOk) return;
+  const w = stage.clientWidth, h = stage.clientHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w/h;
+  camera.fov = w/h < 0.85 ? 34 : 28;
+  camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(stage); resize();
+requestAnimationFrame(frame);
+
+/* arrastrar para girar */
+(function(){
+  let startX = 0, startT = 0, active = false;
+  stage.addEventListener("pointerdown", e=>{ active = true; startX = e.clientX; startT = state.dragTarget; stage.classList.add("dragging"); stage.setPointerCapture(e.pointerId); });
+  stage.addEventListener("pointermove", e=>{ if(!active) return; state.dragTarget = clamp(startT + (e.clientX-startX)/160, -1.1, 1.1); });
+  const end = ()=>{ active = false; stage.classList.remove("dragging"); };
+  stage.addEventListener("pointerup", end); stage.addEventListener("pointercancel", end);
+})();
+
+/* ================== CONVERSACIÓN (ElevenLabs) ================== */
+const $ = id => document.getElementById(id);
+const startBtn = $("startBtn"), stopBtn = $("stopBtn"), errBox = $("error"),
+      transcript = $("transcript"), statusEl = $("status"), statusText = $("statusText"),
+      textInput = $("textInput"), textBtn = $("textBtn");
+const LABELS = {idle:"Listo para declarar", connecting:"Conectando…", listening:"Lucho te escucha", speaking:"Lucho está hablando"};
+
+function setMode(m){
+  state.mode = m;
+  statusEl.dataset.mode = m;
+  statusText.textContent = LABELS[m] || m;
+  if(m === "speaking"){ state.speakStart = performance.now(); }
+  if(m !== "speaking"){ state.outVol = 0; }
+}
+function showError(msg){ errBox.textContent = msg; errBox.classList.add("show"); }
+function clearError(){ errBox.classList.remove("show"); errBox.textContent = ""; }
+function addMsg(who, text){
+  const empty = $("empty"); if(empty) empty.remove();
+  const d = document.createElement("div");
+  d.className = "msg " + (who === "user" ? "user" : "ai");
+  const s = document.createElement("small"); s.textContent = who === "user" ? "Vos" : "Lucho";
+  const p = document.createElement("span"); p.textContent = text;
+  d.append(s, p); transcript.append(d);
+  transcript.scrollTop = transcript.scrollHeight;
+}
+function setUi(connected){
+  startBtn.hidden = connected; stopBtn.hidden = !connected;
+  textInput.disabled = !connected; textBtn.disabled = !connected;
+}
+
+// lectura del volumen de salida (para mover la boca)
+setInterval(()=>{
+  const c = state.conversation;
+  if(!c || state.mode !== "speaking" || typeof c.getOutputVolume !== "function") return;
+  Promise.resolve(c.getOutputVolume()).then(v=>{
+    if(typeof v !== "number" || isNaN(v)) return;
+    state.outVol = v; state.peak = Math.max(state.peak*0.998, v);
+  }).catch(()=>{});
+}, 40);
+
+async function start(){
+  clearError(); startBtn.disabled = true; setMode("connecting");
+  try{
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+      throw new Error("Este navegador no permite usar el micrófono. Probá con Chrome o Edge actualizado y abrí la página por https.");
+    }
+    const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+    stream.getTracks().forEach(t=>t.stop());
+    const { Conversation } = await import(SDK_URL);
+    state.peak = 0;
+    state.conversation = await Conversation.startSession({
+      agentId: AGENT_ID,
+      onConnect: ()=>{ setUi(true); setMode("listening"); },
+      onDisconnect: ()=>{ state.conversation = null; setUi(false); setMode("idle"); startBtn.disabled = false; },
+      onError: (e)=>{ showError("Hubo un problema en la conexión con el agente. Probá de nuevo en unos segundos."); console.error(e); },
+      onModeChange: (m)=>{ const mode = (m && m.mode) || m; if(mode === "speaking") setMode("speaking"); else setMode("listening"); },
+      onMessage: (m)=>{
+        if(!m || !m.message) return;
+        addMsg(m.source === "user" ? "user" : "ai", m.message);
+      }
+    });
+    setUi(true);
+    if(state.mode === "connecting") setMode("listening");
+  }catch(e){
+    console.error(e);
+    setMode("idle"); setUi(false); state.conversation = null;
+    if(e && (e.name === "NotAllowedError" || e.name === "PermissionDeniedError")){
+      showError("No hay permiso para usar el micrófono. Habilitalo en el candado de la barra de direcciones y probá de nuevo.");
+    }else if(e && e.name === "NotFoundError"){
+      showError("No se encontró ningún micrófono conectado.");
+    }else{
+      showError((e && e.message) ? e.message : "No se pudo conectar con el agente. Revisá tu conexión a internet.");
+    }
+  }finally{
+    startBtn.disabled = false;
+  }
+}
+
+async function stop(){
+  const c = state.conversation;
+  if(c && typeof c.endSession === "function"){ try{ await c.endSession(); }catch(e){} }
+  state.conversation = null; setUi(false); setMode("idle");
+}
+
+startBtn.addEventListener("click", start);
+stopBtn.addEventListener("click", stop);
+$("textForm").addEventListener("submit", e=>{
+  e.preventDefault();
+  const v = textInput.value.trim(); const c = state.conversation;
+  if(!v || !c || typeof c.sendUserMessage !== "function") return;
+  c.sendUserMessage(v); addMsg("user", v); textInput.value = "";
+});
+window.addEventListener("beforeunload", ()=>{ const c = state.conversation; if(c && c.endSession) c.endSession(); });
+</script>
+</body>
+</html>
